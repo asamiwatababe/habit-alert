@@ -101,7 +101,8 @@ function App() {
     localStorage.setItem(HABITS_KEY, JSON.stringify(nextHabits));
 
     // 今日の状態からもその習慣のキーを削除
-    const { [id]: _, ...rest } = todayStatus;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { [id]: removed, ...rest } = todayStatus;
     setTodayStatus(rest);
     localStorage.setItem(
       STATUS_PREFIX + todayKey,
@@ -111,9 +112,12 @@ function App() {
 
 
   // 1つでも「今日未完」の習慣があればアラート true
-  const hasUndoneToday =
-    habits.length > 0 &&
-    habits.some((h) => !(todayStatus[h.id] ?? false));
+  // 今日未完了の習慣一覧
+  const undoneHabits = habits.filter((h) => !(todayStatus[h.id] ?? false));
+
+  // 1つでも未完了があればアラート表示
+  const hasUndoneToday = undoneHabits.length > 0;
+
 
   return (
     <div className="app">
@@ -123,9 +127,19 @@ function App() {
       {/* 🔔 アラートバー */}
       {hasUndoneToday && (
         <div className="alert">
-          未完了の習慣があります！今日の習慣をすべて終わらせましょう。
+          <div className="alert-title">
+            🔔 未完了の習慣が {undoneHabits.length} 件あります
+          </div>
+          <div className="alert-list">
+            {undoneHabits.map((h) => (
+              <span key={h.id} className="alert-pill">
+                {h.name}
+              </span>
+            ))}
+          </div>
         </div>
       )}
+
 
       {/* 習慣追加フォーム */}
       <form onSubmit={handleAddHabit} className="habit-form">

@@ -1,42 +1,151 @@
-#root {
-  max-width: 1280px;
+/* 全体レイアウト */
+.app {
+  max-width: 640px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  padding: 24px 16px 40px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background-color: #f3f4f6;
+  min-height: 100vh;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* タイトル */
+.app h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.app p {
+  margin: 0 0 16px;
+  color: #4b5563;
+}
+
+/* 🔔 アラートバー（固定表示） */
+.alert {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.alert-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #92400e;
+}
+
+.alert-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.alert-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: #fde68a;
+  font-size: 12px;
+  color: #92400e;
+}
+
+/* フォーム */
+.habit-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.habit-form input[type="text"] {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+.habit-form button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  background-color: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.habit-form button:hover {
+  background-color: #1d4ed8;
+}
+
+/* 習慣リスト */
+.habit-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.habit-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.habit-list li.done {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.habit-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+/* 削除ボタン */
+.habit-list button {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: none;
+  background-color: #ef4444;
+  color: #fff;
+  cursor: pointer;
+}
+
+.habit-list button:hover {
+  background-color: #dc2626;
+}
+
+/* スマホ向け */
+@media (max-width: 480px) {
+  .app {
+    padding: 16px 12px 32px;
   }
-  to {
-    transform: rotate(360deg);
+
+  .habit-form {
+    flex-direction: column;
   }
-}
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+  .habit-form button {
+    width: 100%;
   }
-}
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+  .habit-list li {
+    align-items: flex-start;
+  }
 }
