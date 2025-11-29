@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
+type Category = "健康" | "勉強" | "仕事" | "家事" | "PTA" | "その他";
+
 type Habit = {
   id: string;
   name: string;
+  category: Category;
 };
 
 type TodayStatus = {
@@ -12,6 +15,15 @@ type TodayStatus = {
 
 const HABITS_KEY = "habitAlert_habits";
 const STATUS_PREFIX = "habitAlert_status_";
+
+const CATEGORY_OPTIONS: Category[] = [
+  "健康",
+  "勉強",
+  "仕事",
+  "家事",
+  "PTA",
+  "その他",
+];
 
 const getTodayKey = () => {
   const d = new Date();
@@ -27,15 +39,22 @@ function App() {
     const savedHabits = localStorage.getItem(HABITS_KEY);
     if (!savedHabits) return [];
     try {
-      const parsed: Habit[] = JSON.parse(savedHabits);
-      return parsed;
+      // JSON を Habit[] として扱う
+      const parsed = JSON.parse(savedHabits) as Habit[];
+
+      // 既存データに category がない場合は「その他」を補完
+      return parsed.map((h) => ({
+        ...h,
+        category: h.category ?? "その他",
+      }));
     } catch (e) {
       console.error("Failed to parse habits from localStorage", e);
       return [];
     }
+
   });
 
-  // 🔹 今日の状態：こちらも初期値として localStorage から読む
+  // 🔹 今日の状態：初期値として localStorage から読む
   const [todayStatus, setTodayStatus] = useState<TodayStatus>(() => {
     if (typeof window === "undefined") return {};
     const savedStatus = localStorage.getItem(STATUS_PREFIX + todayKey);
@@ -50,6 +69,10 @@ function App() {
   });
 
   const [newHabitName, setNewHabitName] = useState("");
+  const [newHabitCategory, setNewHabitCategory] =
+    useState<Category>("健康");
+  const [filterCategory, setFilterCategory] =
+    useState<Category | "ALL">("ALL");
 
   // 🔹 習慣リストが変わったら保存
   useEffect(() => {
@@ -71,14 +94,15 @@ function App() {
     const habit: Habit = {
       id: crypto.randomUUID(),
       name: newHabitName.trim(),
+      category: newHabitCategory,
     };
 
     const nextHabits = [...habits, habit];
     setHabits(nextHabits);
-    // 念のため即保存
     localStorage.setItem(HABITS_KEY, JSON.stringify(nextHabits));
 
     setNewHabitName("");
+    setNewHabitCategory("健康");
   };
 
   const toggleHabitDoneToday = (id: string) => {
@@ -87,7 +111,6 @@ function App() {
       [id]: !todayStatus[id],
     };
     setTodayStatus(nextStatus);
-    // 念のため即保存
     localStorage.setItem(
       STATUS_PREFIX + todayKey,
       JSON.stringify(nextStatus)
@@ -95,12 +118,10 @@ function App() {
   };
 
   const handleDeleteHabit = (id: string) => {
-    // 習慣リストから削除
     const nextHabits = habits.filter((h) => h.id !== id);
     setHabits(nextHabits);
     localStorage.setItem(HABITS_KEY, JSON.stringify(nextHabits));
 
-    // 今日の状態からもその習慣のキーを削除
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { [id]: removed, ...rest } = todayStatus;
     setTodayStatus(rest);
@@ -110,14 +131,17 @@ function App() {
     );
   };
 
+  // フィルター適用後の習慣一覧
+  const filteredHabits =
+    filterCategory === "ALL"
+      ? habits
+      : habits.filter((h) => h.category === filterCategory);
 
-  // 1つでも「今日未完」の習慣があればアラート true
-  // 今日未完了の習慣一覧
-  const undoneHabits = habits.filter((h) => !(todayStatus[h.id] ?? false));
-
-  // 1つでも未完了があればアラート表示
+  // 今日未完了の習慣一覧（フィルター関係なく全体で判定）
+  const undoneHabits = habits.filter(
+    (h) => !(todayStatus[h.id] ?? false)
+  );
   const hasUndoneToday = undoneHabits.length > 0;
-
 
   return (
     <div className="app">
@@ -140,32 +164,71 @@ function App() {
         </div>
       )}
 
-
       {/* 習慣追加フォーム */}
       <form onSubmit={handleAddHabit} className="habit-form">
         <input
           type="text"
-          placeholder="習慣名（例：歯磨き・英語30分など）"
+          placeholder="習慣名（例：ストレッチ10分）"
           value={newHabitName}
           onChange={(e) => setNewHabitName(e.target.value)}
         />
+
+        <select
+          value={newHabitCategory}
+          onChange={(e) =>
+            setNewHabitCategory(e.target.value as Category)
+          }
+        >
+          {CATEGORY_OPTIONS.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+
         <button type="submit">追加</button>
       </form>
 
+      {/* カテゴリフィルター */}
+      <div className="filter-bar">
+        <button
+          type="button"
+          className={filterCategory === "ALL" ? "active" : ""}
+          onClick={() => setFilterCategory("ALL")}
+        >
+          すべて
+        </button>
+        {CATEGORY_OPTIONS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            className={filterCategory === c ? "active" : ""}
+            onClick={() => setFilterCategory(c)}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+
       {/* 習慣一覧 */}
       <ul className="habit-list">
-        {habits.map((habit) => {
+        {filteredHabits.map((habit) => {
           const done = todayStatus[habit.id] ?? false;
           return (
             <li key={habit.id} className={done ? "done" : ""}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={done}
-                  onChange={() => toggleHabitDoneToday(habit.id)}
-                />
-                {habit.name}
-              </label>
+              <div className="habit-main">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={done}
+                    onChange={() => toggleHabitDoneToday(habit.id)}
+                  />
+                  {habit.name}
+                </label>
+                <span className="category-badge">
+                  {habit.category}
+                </span>
+              </div>
 
               <button
                 type="button"
@@ -176,12 +239,10 @@ function App() {
             </li>
           );
         })}
-        {habits.length === 0 && (
-          <p>まだ習慣がありません。追加してみましょう。</p>
+        {filteredHabits.length === 0 && (
+          <p>このカテゴリの習慣はありません。</p>
         )}
       </ul>
-
-
     </div>
   );
 }
