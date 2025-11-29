@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 
 type Habit = {
@@ -10,40 +10,94 @@ type TodayStatus = {
   [habitId: string]: boolean; // true = 今日やった
 };
 
+const HABITS_KEY = "habitAlert_habits";
+const STATUS_PREFIX = "habitAlert_status_";
+
 const getTodayKey = () => {
   const d = new Date();
-  // 2025-11-29 みたいなキー
-  return d.toISOString().slice(0, 10);
+  return d.toISOString().slice(0, 10); // 例: 2025-11-29
 };
 
 function App() {
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [todayStatus, setTodayStatus] = useState<TodayStatus>({});
+  const todayKey = getTodayKey();
+
+  // 🔹 習慣リスト：初期値として localStorage から読む
+  const [habits, setHabits] = useState<Habit[]>(() => {
+    if (typeof window === "undefined") return [];
+    const savedHabits = localStorage.getItem(HABITS_KEY);
+    if (!savedHabits) return [];
+    try {
+      const parsed: Habit[] = JSON.parse(savedHabits);
+      return parsed;
+    } catch (e) {
+      console.error("Failed to parse habits from localStorage", e);
+      return [];
+    }
+  });
+
+  // 🔹 今日の状態：こちらも初期値として localStorage から読む
+  const [todayStatus, setTodayStatus] = useState<TodayStatus>(() => {
+    if (typeof window === "undefined") return {};
+    const savedStatus = localStorage.getItem(STATUS_PREFIX + todayKey);
+    if (!savedStatus) return {};
+    try {
+      const parsed: TodayStatus = JSON.parse(savedStatus);
+      return parsed;
+    } catch (e) {
+      console.error("Failed to parse todayStatus from localStorage", e);
+      return {};
+    }
+  });
+
   const [newHabitName, setNewHabitName] = useState("");
 
-  const todayKey = getTodayKey();
+  // 🔹 習慣リストが変わったら保存
+  useEffect(() => {
+    localStorage.setItem(HABITS_KEY, JSON.stringify(habits));
+  }, [habits]);
+
+  // 🔹 今日の状態が変わったら保存
+  useEffect(() => {
+    localStorage.setItem(
+      STATUS_PREFIX + todayKey,
+      JSON.stringify(todayStatus)
+    );
+  }, [todayStatus, todayKey]);
 
   const handleAddHabit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newHabitName.trim()) return;
+
     const habit: Habit = {
       id: crypto.randomUUID(),
       name: newHabitName.trim(),
     };
-    setHabits((prev) => [...prev, habit]);
+
+    const nextHabits = [...habits, habit];
+    setHabits(nextHabits);
+    // 念のため即保存
+    localStorage.setItem(HABITS_KEY, JSON.stringify(nextHabits));
+
     setNewHabitName("");
   };
 
   const toggleHabitDoneToday = (id: string) => {
-    setTodayStatus((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
+    const nextStatus: TodayStatus = {
+      ...todayStatus,
+      [id]: !todayStatus[id],
+    };
+    setTodayStatus(nextStatus);
+    // 念のため即保存
+    localStorage.setItem(
+      STATUS_PREFIX + todayKey,
+      JSON.stringify(nextStatus)
+    );
   };
 
+  // 1つでも「今日未完」の習慣があればアラート true
   const hasUndoneToday =
     habits.length > 0 &&
-    habits.some((h) => !todayStatus[h.id]); // 1つでも false/undefined があればアラート
+    habits.some((h) => !(todayStatus[h.id] ?? false));
 
   return (
     <div className="app">
@@ -53,7 +107,7 @@ function App() {
       {/* 🔔 アラートバー */}
       {hasUndoneToday && (
         <div className="alert">
-          未完了の習慣があります！
+          未完了の習慣があります！今日の習慣をすべて終わらせましょう。
         </div>
       )}
 
@@ -61,7 +115,7 @@ function App() {
       <form onSubmit={handleAddHabit} className="habit-form">
         <input
           type="text"
-          placeholder="習慣名（例：ストレッチ10分）"
+          placeholder="習慣名（例：歯磨き・英語30分など）"
           value={newHabitName}
           onChange={(e) => setNewHabitName(e.target.value)}
         />
@@ -85,6 +139,9 @@ function App() {
             </li>
           );
         })}
+        {habits.length === 0 && (
+          <p>まだ習慣がありません。追加してみましょう。</p>
+        )}
       </ul>
     </div>
   );
