@@ -94,6 +94,22 @@ function App() {
     );
   };
 
+  const handleDeleteHabit = (id: string) => {
+    // 習慣リストから削除
+    const nextHabits = habits.filter((h) => h.id !== id);
+    setHabits(nextHabits);
+    localStorage.setItem(HABITS_KEY, JSON.stringify(nextHabits));
+
+    // 今日の状態からもその習慣のキーを削除
+    const { [id]: _, ...rest } = todayStatus;
+    setTodayStatus(rest);
+    localStorage.setItem(
+      STATUS_PREFIX + todayKey,
+      JSON.stringify(rest)
+    );
+  };
+
+
   // 1つでも「今日未完」の習慣があればアラート true
   const hasUndoneToday =
     habits.length > 0 &&
@@ -136,6 +152,13 @@ function App() {
                 />
                 {habit.name}
               </label>
+
+              <button
+                type="button"
+                onClick={() => handleDeleteHabit(habit.id)}
+              >
+                削除
+              </button>
             </li>
           );
         })}
@@ -143,6 +166,8 @@ function App() {
           <p>まだ習慣がありません。追加してみましょう。</p>
         )}
       </ul>
+
+
     </div>
   );
 }
